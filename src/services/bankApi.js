@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { BANK_API_URL } from '../config/index.config.js';
 
 const service = axios.create({
-    baseURL: getEnv('VUE_APP_BASE_API'),
+    baseURL: BANK_API_URL,
     // withCredentials: true, // send cookies when cross-domain requests
     timeout: 5000
 });

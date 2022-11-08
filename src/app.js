@@ -1,6 +1,6 @@
 import express from 'express';
 import morgan from 'morgan';
-import payment from './payment/index.js';
+import payment from './gateway/payment.js';
 import pool from "./services/db.js";
 import pkg from '../package.json' assert { type: "json" };
 

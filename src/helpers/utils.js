@@ -6,3 +6,11 @@ export function removeUndefined(obj) {
         return acc;
     }, {});
 }
+
+export function hasUndefined(obj) {
+    return Object.keys(obj).some(key => obj[key] === undefined);
+}
+
+export function genReferenceNumber() {
+    return +new Date() + '' + Math.floor(Math.random() * 1000000);
+}

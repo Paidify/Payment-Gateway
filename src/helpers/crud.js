@@ -1,5 +1,5 @@
-import pool from "./db.js";
-import { joinClauses, limitClause, orderClause, selectClause, whereClause } from "../helpers/queryHelpers.js";
+import pool from "../services/db.js";
+import { joinClauses, limitClause, orderClause, selectClause, whereClause } from "./queryHelpers.js";
 
 export async function deleteOne(table, where, conn=pool) {
     const result = (await conn.query(`
