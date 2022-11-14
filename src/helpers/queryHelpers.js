@@ -1,9 +1,8 @@
-import models from "./models.js";
-
 export function selectClause(select) {
+    if(!select) return 'SELECT *';
+
     const inserted = [];
     return `SELECT ${Object.keys(select).map(table => {
-        if(select[table] === '*') select[table] = models[table];
         return select[table].map(field => {
             const sel = `${table}.${field}${inserted.includes(field) ? ` AS ${table}_${field}` : ''}`;
             inserted.push(field);
@@ -13,23 +12,28 @@ export function selectClause(select) {
 }
 
 export function joinClauses(joins) {
-    return joins.join('\n');
+    return joins ? joins.join('\n') : '';
 }
 
 export function whereClause(query) {
+    if(!query) return '';
+    
     const formatValue = value => isNaN(value) ? `'${value}'` : value;
 
+    const logicOp = query.$or ? ' OR' : ' AND';
+    delete query.$or;
     let where = '';
     let i = 0;
     
     for (const key in query) {
-        where += i === 0 ? `WHERE` : ` AND`;
+        where += i === 0 ? `WHERE` : logicOp;
         
-        if(typeof query[key] === 'object') { //if it's an array
-            const conds = query[key].map(op => `${key} = ${formatValue(op)}`).join(' OR ');
+        const field = query[key];
+        if(typeof field === 'object') { //if it's an array
+            const conds = field.map(op => `${key} = ${formatValue(op)}`).join(' OR ');
             where += ` (${conds})`;
         } else {
-            where += ` ${key} = ${formatValue(query[key])}`;
+            where += ` ${key} = ${formatValue(field)}`;
         }
         i++;
     }

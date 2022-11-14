@@ -1,7 +1,6 @@
-import pool from "../services/db.js";
-import { joinClauses, limitClause, orderClause, selectClause, whereClause } from "./queryHelpers.js";
+import { joinClauses, selectClause, whereClause, limitClause, orderClause } from './queryHelpers.js';
 
-export async function deleteOne(table, where, conn=pool) {
+export async function deleteOne(table, where, conn) {
     const result = (await conn.query(`
         DELETE FROM ${table}
         ${whereClause(where)}
@@ -10,7 +9,7 @@ export async function deleteOne(table, where, conn=pool) {
     if(!result.affectedRows) throw new Error('Not found');
 }
 
-export async function readOne(table, select, joins, where, conn=pool) {
+export async function readOne(table, select, joins, where, conn) {
     const elements = (await conn.query(`
         ${selectClause(select)}
         FROM ${table}
@@ -22,7 +21,7 @@ export async function readOne(table, select, joins, where, conn=pool) {
     return elements[0];
 }
 
-export async function readMany(table, select, joins, where, limit, order, conn=pool) {
+export async function readMany(table, select, joins, where, limit, order, conn) {
     return (await conn.query(`
         ${selectClause(select)}
         FROM ${table}
@@ -33,14 +32,14 @@ export async function readMany(table, select, joins, where, limit, order, conn=p
     `))[0];
 }
 
-export async function createOne(table, element, conn=pool) {
+export async function createOne(table, element, conn) {
     return (await conn.query(`
         INSERT INTO ${table} (${Object.keys(element).join(', ')})
         VALUES (${Object.keys(element).map(() => '?').join(', ')});
     `, Object.values(element)))[0];
 }
 
-export async function updateOne(table, element, where, conn=pool) {
+export async function updateOne(table, element, where, conn) {
     const result = (await conn.query(`
         UPDATE ${table}
         SET ${Object.keys(element).map(key => `${key} = ?`).join(', ')}

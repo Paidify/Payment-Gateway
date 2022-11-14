@@ -1,22 +1,21 @@
 import { createPool } from 'mysql2/promise';
 import {
+    NODE_ENV,
     DB_HOST,
     DB_PORT,
+    DB_SSL_CA,
     DB_USER,
     DB_PASSWORD,
-    DB_DATABASE,
-    DB_SSL_CA,
-    NODE_ENV
+    DB_UNIV_SCHEMA,
 } from '../config/index.config.js';
 
 const pool = createPool({
     port: DB_PORT,
     host: DB_HOST,
+    ssl: NODE_ENV === 'production' ? { ca: DB_SSL_CA } : undefined,
     user: DB_USER,
     password: DB_PASSWORD,
-    database: DB_DATABASE,
-    ssl: NODE_ENV === 'production' ? { ca: DB_SSL_CA } : undefined,
-    // connectionLimit: 10
+    database: DB_UNIV_SCHEMA,
 });
 
 pool.on('connection', (connection) => {
