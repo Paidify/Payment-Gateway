@@ -39,15 +39,3 @@ export function whereClause(query) {
     }
     return where;
 }
-
-export function limitClause(query) {
-    if(!query) return '';
-    const { $offset, $limit } = query;
-    return `LIMIT ${$offset ? $offset : 0}, ${$limit}`;
-}
-
-export function orderClause(query) {
-    if(!query) return '';
-    const { by, order } = query;
-    return `ORDER BY ${by} ${order}`;
-}

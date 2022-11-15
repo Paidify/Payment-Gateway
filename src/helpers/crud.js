@@ -1,4 +1,4 @@
-import { joinClauses, selectClause, whereClause, limitClause, orderClause } from './queryHelpers.js';
+import { joinClauses, selectClause, whereClause } from './queryHelpers.js';
 
 export async function deleteOne(table, where, conn) {
     const result = (await conn.query(`
@@ -21,14 +21,12 @@ export async function readOne(table, select, joins, where, conn) {
     return elements[0];
 }
 
-export async function readMany(table, select, joins, where, limit, order, conn) {
+export async function readMany(table, select, joins, where,conn) {
     return (await conn.query(`
         ${selectClause(select)}
         FROM ${table}
         ${joinClauses(joins)}
-        ${whereClause(where)}
-        ${limitClause(limit)}
-        ${orderClause(order)};
+        ${whereClause(where)};
     `))[0];
 }
 

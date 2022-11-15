@@ -19,10 +19,6 @@ export const DB_PASSWORD = process.env.DB_PASSWORD || 'secret';
 export const DB_PAIDIFY_SCHEMA = process.env.DB_PAIDIFY_SCHEMA || 'paidify';
 export const DB_UNIV_SCHEMA = process.env.DB_UNIV_SCHEMA || 'univ';
 
-// western bank api
-export const WESTERN_BANK_API_URL = process.env.WESTERN_BANK_API_URL || 'https://api.westernbank.com';
-export const WESTERN_BANK_API_KEY = process.env.WESTERN_BANK_API_KEY || 'secret';
-
-// east bank api
-export const EAST_BANK_API_URL = process.env.EAST_BANK_API_URL || 'https://api.eastbank.com';
-export const EAST_BANK_API_KEY = process.env.EAST_BANK_API_KEY || 'secret';
+// banks endpoints
+export const WESTERN_BANK_API_ENDPOINT = process.env.WESTERN_BANK_API_ENDPOINT || 'https://api.westernbank.com/makepay';
+export const EAST_BANK_API_ENDPOINT = process.env.EAST_BANK_API_ENDPOINT || 'https://api.eastbank.com/makepay';
