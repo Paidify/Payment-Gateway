@@ -158,6 +158,7 @@ router.post('/', async (req, res) => {
             } catch (err) {
                 console.log(err);
                 await connP.rollback();
+                connP.release();
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ message: 'Duplicate entry when creating guest' });
                 }
@@ -227,45 +228,23 @@ router.post('/', async (req, res) => {
                     ..._
                 },
                 connP
-            )
+            );
         } catch(err) {
             console.log(err);
             await connP.rollback();
+            connP.release();
             return res.status(500).json({ message: 'Error when creating payment' });
         }
         await connP.commit();
     } catch (err) {
         console.log(err);
         await connP.rollback();
+        connP.release();
         return res.status(500).json({ message: 'Internal server error' });
     }
     connP.release();
 
     res.status(201).json({ message: 'Payment created', ref_number: refNumber });
-    // axios({
-    //     method: 'post',
-    //     url: getBankApiEndpoint(cardFields.card_number),
-    //     headers: { 'Content-Type': 'application/json' },
-    //     data: {
-    //         'nombre': payerFields.first_name + ' ' + payerFields.last_name,
-    //         'email': payerFields.email,
-    //         'id': payerFields.doc_number,
-    //         'monto': amount,
-    //         'mdPago': cardFields.card_type_id,
-    //         'nroTarjeta': cardFields.card_number,
-    //         'expMonth': _.exp_month,
-    //         'expYear': _.exp_year,
-    //         'cvv': _.cvv,
-    //         'nroCuotas': num_installments,
-    //     }
-    // }).then((response) => {
-    //     console.log(response.data);
-    //     // TODO: update payment
-
-    // }).catch((err) => {
-    //     console.log(err);
-    //     // TODO: process error
-    // });
     await servePaymentReq({
         first_name: payerFields.first_name,
         last_name: payerFields.last_name,
@@ -278,27 +257,8 @@ router.post('/', async (req, res) => {
         exp_year: _.exp_year,
         cvv: _.cvv,
         num_installments,
+        ref_number: refNumber
     });
-    // fetch(getBankApiEndpoint(cardFields.card_number), {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //         'nombre': payerFields.first_name + ' ' + payerFields.last_name,
-    //         'email': payerFields.email,
-    //         'id': payerFields.doc_number,
-    //         'monto': amount,
-    //         'mdPago': cardFields.card_type_id,
-    //         'nroTarjeta': cardFields.card_number,
-    //         'expMonth': _.exp_month,
-    //         'expYear': _.exp_year,
-    //         'cvv': _.cvv,
-    //         'nroCuotas': num_installments,
-    //     }),
-    // }).then(data => {
-    //     console.log(data);
-    // }).catch(err => {
-    //     console.log(err);
-    // });
 });
 
 export default router;

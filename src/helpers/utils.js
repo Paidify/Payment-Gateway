@@ -2,7 +2,11 @@ import { CARD_FIRST_DIGIT_ALLOWED } from "../config/constants.js";
 import { EAST_BANK_API_ENDPOINT, WESTERN_BANK_API_ENDPOINT } from "../config/index.config.js";
 
 export function genReferenceNumber() {
-    return +new Date() + '' + Math.floor(Math.random() * 1000000);
+    return String(+new Date() + '' + Math.floor(Math.random() * 1000000));
+}
+
+export function genInvoiceNumber() {
+    return 'INV-' + genReferenceNumber();
 }
 
 export function date2Mysql(date) {
