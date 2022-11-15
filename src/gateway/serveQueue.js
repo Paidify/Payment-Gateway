@@ -28,7 +28,7 @@ export default async function () {
             poolP,
         );
     } catch(err) {
-        return console.log(err);
+        return { error: 'Cannot read payment requests' };
     }
 
     if(!payReqs.length) return console.log('No payment requests to process');
@@ -40,7 +40,7 @@ export default async function () {
             null, null, poolU
         );
     } catch(err) {
-        return console.log(err);
+        return { error: 'Cannot read payment concepts' };
     }
 
     try {
@@ -50,7 +50,7 @@ export default async function () {
             null, null, poolU
         );
     } catch(err) {
-        return console.log(err);
+        return { error: 'Cannot read persons' };
     }
 
     // console.log('payReqs', payReqs);
@@ -73,17 +73,35 @@ export default async function () {
 
     payReqs.forEach(servePaymentReq);
 
-    let i = 0;
-    const interval = setInterval(() => {
-        servePaymentReq(payReqs[i]);
-        i++;
-        if(i === payReqs.length) clearInterval(interval);
-    }, 5000);
+    // let i = 0;
+    // const interval = setInterval(() => {
+    //     servePaymentReq(payReqs[i]);
+    //     i++;
+    //     if(i === payReqs.length) clearInterval(interval);
+    // }, 5000);
+
+    return { message: 'Payment requests processed' };
 }
 
 export async function servePaymentReq ({first_name, last_name, email, doc_number, amount, 
     card_type_id, card_number, exp_month, exp_year, cvv, num_installments}) {
     
+    console.log({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            'nombre': first_name + ' ' + last_name,
+            'email': email,
+            'id': doc_number,
+            'monto': amount,
+            'mdPago': card_type_id,
+            'nroTarjeta': card_number,
+            'expMonth': exp_month,
+            'expYear': exp_year,
+            'cvv': cvv,
+            'nroCuotas': num_installments,
+        }),
+    });
     return fetch(getBankApiEndpoint(card_number), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

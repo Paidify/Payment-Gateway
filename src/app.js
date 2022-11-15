@@ -4,6 +4,7 @@ import payment from './gateway/payment.js';
 import poolU from './services/dbUniv.js';
 import poolP from './services/dbPaidify.js';
 import pkg from '../package.json' assert { type: "json" };
+import serveQueue from './gateway/serveQueue.js';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.get('/ping', async (_, res) => {
 });
 app.use('/pay', payment);
 app.post('/api-gateway', async (_, res) => res.status(200).json(await apiGateway()));
+app.post('/serve-queue', async (_, res) => res.status(200).json(await serveQueue()));
 app.use((_, res) => res.status(404).json({ message: 'Not Found' }));
 
 export default app;
