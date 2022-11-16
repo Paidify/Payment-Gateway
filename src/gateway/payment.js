@@ -6,6 +6,7 @@ import hashValue from '../helpers/hashValue.js';
 import {
     date2Mysql,
     genReferenceNumber,
+    getBankInfo,
     validateCardNumber,
     validateCvv,
     validateDate,
@@ -14,6 +15,8 @@ import {
     validateNumInstallments
 } from '../helpers/utils.js';
 import { servePaymentReq } from './serveQueue.js';
+import { transporter } from '../services/mailer.js';
+import { MAIL_USER } from '../config/index.config.js';
 
 const router = new Router();
 
@@ -135,7 +138,9 @@ router.post('/', async (req, res) => {
             };
     
             try {
-                guest = await readOne('guest', { 'guest': ['id', 'address_id'] }, [], { doc_number }, poolP);
+                guest = await readOne(
+                    'guest', { 'guest': ['id', 'address_id', 'payer_id'] }, [], { doc_number }, poolP
+                );
             } catch(err) {}
     
             try {
@@ -199,7 +204,7 @@ router.post('/', async (req, res) => {
                 return res.status(500).json({ message: 'Internal server error' });
             }
         }
-
+        console.log('payerFields', payerFields);
         // create payment
         refNumber = genReferenceNumber();
         try {
@@ -256,6 +261,24 @@ router.post('/', async (req, res) => {
         num_installments,
         ref_number: refNumber
     });
+
+    const { bank } = getBankInfo(cardFields.card_number);
+    const mailClient = {
+        from: `"Paidify" <${MAIL_USER}>`,
+        to: 'uwu.ossas.uwu@gmail.com',
+        subject: 'Pago en Proceso',
+        html: `
+            <h2>Solicitud de Pago Recibida</h2>
+            <p>Tu pago fue recibido por Paidify y está siendo procesado por ${bank}.</p>
+            <p><b>Número de referencia:</b> ${refNumber}</p>
+        `
+    };
+    try {
+        await transporter.sendMail(mailClient);
+        console.log(`Mail sent to ${mailClient.to}`);
+    } catch(err) {
+        console.log(`Cannot send mail to ${mailClient.to}`);
+    }
 });
 
 export default router;

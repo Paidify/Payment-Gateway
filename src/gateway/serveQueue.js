@@ -2,7 +2,7 @@ import poolP from '../services/dbPaidify.js';
 import poolU from '../services/dbUniv.js';
 import { createOne, deleteOne, readMany, readOne, updateOne } from '../helpers/crud.js'
 import fetch from "../helpers/fetch.js";
-import { getBankInfo } from "../helpers/utils.js";
+import { date2Mysql, getBankInfo, getCardCategory } from "../helpers/utils.js";
 import { transporter } from '../services/mailer.js';
 import { MAIL_USER } from '../config/index.config.js';
 
@@ -14,17 +14,15 @@ export default async function () {
             'payment_req',
             {
                 'payment_req': ['card_number', 'owner', 'cvv', 'exp_year', 'exp_month'],
-                'payment': ['ref_number', 'date', 'num_installments', 'payment_concept_id'],
+                'payment': ['ref_number', 'date', 'num_installments', 'payment_concept_id', 'card_type_id'],
                 'user': ['person_id'],
                 'guest': ['first_name', 'last_name', 'email', 'doc_number'],
-                'card_type': ['card_type'],
             },
             [
                 'JOIN payment ON payment_req.payment_id = payment.id',
                 'JOIN payer ON payment.payer_id = payer.id',
                 'LEFT JOIN user ON payer.id = user.payer_id',
                 'LEFT JOIN guest ON payer.id = guest.payer_id',
-                'JOIN card_type ON payment.card_type_id = card_type.id',
             ],
             null,
             poolP,
@@ -32,6 +30,7 @@ export default async function () {
     } catch(err) {
         return { status: 500, message: 'Error reading payment requests', error: err.message };
     }
+    console.log(payReqs);
 
     if(!payReqs.length) return console.log('No payment requests to process');
 
@@ -78,7 +77,6 @@ export default async function () {
         
         return payReq;
     });
-    console.log(payReqs);
     payReqs = payReqs.filter(payReq => !payReq.error);
 
     payReqs.forEach(servePaymentReq);
@@ -96,11 +94,22 @@ export default async function () {
 export async function servePaymentReq ({first_name, last_name, email, doc_number, amount, 
     card_type_id, card_number, exp_month, exp_year, cvv, num_installments, ref_number}) {
     
-    const mailClient = {
-        from: `"Paidify" <${MAIL_USER}>`,
-        to: 'uwu.ossas.uwu@gmail.com',
-    };
     const { bank, url } = getBankInfo(card_number);
+    
+    // console.log({
+    //         'nombre': first_name + ' ' + last_name,
+    //         'email': email,
+    //         'id': doc_number,
+    //         'monto': amount,
+    //         'mdPago': card_type_id,
+    //         'nroTarjeta': card_number,
+    //         'franquicia': getCardCategory(card_number),
+    //         'expMonth': exp_month,
+    //         'expYear': exp_year,
+    //         'cv': cvv,
+    //         'nroCuotas': num_installments,
+    //         'nroReferencia': ref_number
+    //     });
     
     fetch(url, {
         method: 'POST',
@@ -112,16 +121,17 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
             'monto': amount,
             'mdPago': card_type_id,
             'nroTarjeta': card_number,
+            'franquicia': getCardCategory(card_number),
             'expMonth': exp_month,
             'expYear': exp_year,
-            'cvv': cvv,
+            'cv': cvv,
             'nroCuotas': num_installments,
-            'nroReferencia': ref_number,
+            'nroReferencia': ref_number
         }),
-    }).then(async ({ data }) => {
-        console.log(data);
-        if(data.message === 'OK') { //it doesn't mean the payment has been successful, but that there is a response
-            const { successful, ref_number, effective_date, amount, balance, fulfilled } = data.data;
+    }).then(async ({ data: json }) => {
+        console.log(ref_number, json);
+        if(json.message === 'OK') { //it doesn't mean the payment has been successful, but that there is a response
+            const { successful, ref_number, effective_date, amount, balance, fulfilled } = json.data;
             
             let payment, paySettledId, invNumber;
             const mailOrg = {
@@ -136,6 +146,10 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                     <p><b>Balance:</b> ${balance}</p>
                     <p><b>Fulfilled:</b> ${fulfilled}</p>
                 `
+            };
+            const mailClient = {
+                from: `"Paidify" <${MAIL_USER}>`,
+                to: 'uwu.ossas.uwu@gmail.com',
             };
             const errors = [];
             try {
@@ -158,10 +172,11 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                 paySettledId = (await createOne(
                     'payment_settled',
                     {
-                        ref_number, effective_date, amount, balance,
+                        ref_number, amount, balance,
                         fulfilled: fulfilled ? 1 : 0,
                         successful: successful ? 1 : 0,
                         payment_id: payment.id || null,
+                        effective_date: date2Mysql(effective_date)
                     },
                     poolP
                 )).insertId;
@@ -261,7 +276,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                 mailClient.html = `
                     <h2>Pago con Número de Referencia ${ref_number} Fallido</h2>
                     <h4>Pago rechazado por ${bank}</h4>
-                    <p><b>Razón</b>: ${data.rejectReason}</p>
+                    <p><b>Razón</b>: ${json.reason}</p>
                     <p><b>Fecha efectiva:</b> ${effective_date}</p>
                 `;
             }
@@ -269,7 +284,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
             // send mail to client
             try {
                 await transporter.sendMail(mailClient);
-                console.log(`Mail sent to ${mailClient.to}`);
+                console.log(`Mail sent to ${mailClient.to} (Payment completed)`);
             } catch(err) {
                 console.log(`Cannot send mail to ${mailClient.to}`);
                 errors.push('<p><b>Mail to client:</b> Not sent</p>');
@@ -289,23 +304,9 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
             } catch(err) {
                 console.log(`Cannot send mail to ${mailOrg.to}`);
             }
-        } else {
-            console.log('No data received from bank');
         }
     }).catch(err => {
         console.log('Payment request failed', err.message);
     });
-
-    mailClient.subject = 'Pago en Proceso';
-    mailClient.html = `
-        <h2>Solicitud de Pago Recibida</h2>
-        <p>Tu pago fue recibido por Paidify y está siendo procesado por ${bank}.</p>
-        <p><b>Número de referencia:</b> ${ref_number}</p>
-        `
-    try {
-        await transporter.sendMail(mailClient);
-        console.log(`Mail sent to ${mailClient.to}`);
-    } catch(err) {
-        console.log(`Cannot send mail to ${mailClient.to}`);
-    }
+    
 }

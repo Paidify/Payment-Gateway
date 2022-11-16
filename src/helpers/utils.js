@@ -59,3 +59,7 @@ export function getBankInfo(cardNumber) {
         bank: 'East Bank',
     };
 }
+
+export function getCardCategory(cardNumber) {
+    return cardNumber[0];
+}
