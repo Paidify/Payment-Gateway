@@ -51,7 +51,7 @@ export function validateNumInstallments(numInstallments) {
 }
 
 export function getBankInfo(cardNumber) {
-    return String(cardNumber)[1] <= 4 ? {
+    return String(cardNumber)[1] >= 5 ? {
         url: WESTERN_BANK_API_ENDPOINT,
         bank: 'Western Bank',
     } : {

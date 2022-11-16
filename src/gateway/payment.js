@@ -204,7 +204,6 @@ router.post('/', async (req, res) => {
                 return res.status(500).json({ message: 'Internal server error' });
             }
         }
-        console.log('payerFields', payerFields);
         // create payment
         refNumber = genReferenceNumber();
         try {

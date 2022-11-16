@@ -2,7 +2,7 @@ import poolP from '../services/dbPaidify.js';
 import poolU from '../services/dbUniv.js';
 import { createOne, deleteOne, readMany, readOne, updateOne } from '../helpers/crud.js'
 import fetch from "../helpers/fetch.js";
-import { date2Mysql, getBankInfo, getCardCategory } from "../helpers/utils.js";
+import { date2Mysql, genInvoiceNumber, getBankInfo, getCardCategory } from "../helpers/utils.js";
 import { transporter } from '../services/mailer.js';
 import { MAIL_USER } from '../config/index.config.js';
 
@@ -95,7 +95,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
     card_type_id, card_number, exp_month, exp_year, cvv, num_installments, ref_number}) {
     
     const { bank, url } = getBankInfo(card_number);
-    
+    console.log(url);
     // console.log({
     //         'nombre': first_name + ' ' + last_name,
     //         'email': email,
@@ -172,17 +172,18 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                 paySettledId = (await createOne(
                     'payment_settled',
                     {
-                        ref_number, amount, balance,
+                        amount, balance,
                         fulfilled: fulfilled ? 1 : 0,
                         successful: successful ? 1 : 0,
                         payment_id: payment.id || null,
-                        effective_date: date2Mysql(effective_date)
+                        effective_date: date2Mysql(new Date(effective_date))
                     },
                     poolP
                 )).insertId;
                 console.log(`Payment settled with ref_number ${ref_number} created`);
             } catch(err) {
                 console.log(`Cannot create payment_settled with ref_number ${ref_number}`);
+                console.log(err);
                 errors.push('<p><b>Payment settled:</b> Not created</p>');
             }
 
@@ -252,12 +253,12 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                 mailClient.html = `
                     <h2>Pago con Número de Referencia ${ref_number} Exitoso</h2>
                     <h4>Pago aprobado por ${bank}</h4>
-                    <p><b>Número de fatura:</b> ${invNumber ? invNumber : 'No generado'}</p>
+                    <p><b>Número de factura:</b> ${invNumber ? invNumber : 'No generado'}</p>
                     ${payment ?
                         `
                         <p><b>Número de cuotas:</b> ${payment.num_installments}</p>
-                        <p><b>Fecha de pago:</b> ${payment.date}</p>
-                        <p><b>Fecha de pasarela de pago:</b> ${payment.gateway_date}</p>
+                        <p><b>Fecha de pago:</b> ${payment.date.toLocaleString()}</p>
+                        <p><b>Fecha de pasarela de pago:</b> ${payment.gateway_date.toLocaleString()}</p>
                         ${payment.campus ? `<p><b>Sede:</b> ${payment.campus}</p>` : ''}
                         ${payment.payment_concept ?
                             `
@@ -294,7 +295,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
             if(errors.length) {
                 mailOrg.html += `
                     <br><hr>
-                    <h4>Internal Errors During Payment (ref. number not found)</h4>
+                    <h4>Internal Errors During Payment</h4>
                     ${errors.join('')}
                 `;
             }
