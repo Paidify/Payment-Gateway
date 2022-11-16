@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import poolP from '../services/dbPaidify.js';
 import poolU from '../services/dbUniv.js';
-import { createOne, deleteOne, readMany, readOne, updateOne } from '../helpers/crud.js'
+import { createOne, readOne, updateOne } from '../helpers/crud.js'
 import hashValue from '../helpers/hashValue.js';
 import {
     date2Mysql,
     genReferenceNumber,
-    getBankApiEndpoint,
     validateCardNumber,
     validateCvv,
     validateDate,
@@ -14,8 +13,6 @@ import {
     validateExpYear,
     validateNumInstallments
 } from '../helpers/utils.js';
-// import axios from 'axios';
-import fetch from '../helpers/fetch.js';
 import { servePaymentReq } from './serveQueue.js';
 
 const router = new Router();

@@ -15,14 +15,15 @@ export default async function(url, options) {
     }
 
     try {
+        if(options.method === 'GET') delete options.body;
         const res = await fetch(url, {
             ...options,
-            signal: controller.signal,
-        });
-        if(res.headers.get('content-type').includes('application/json')) {
-            return res.json();
-        }
-        return res.text();
+            signal: controller.signal
+        }, controller.signal);
+        return {
+            status: res.status,
+            data: await (res.headers.get('content-type').includes('application/json') ? res.json() : res.text())
+        };
     } catch(err) {
         if(err instanceof AbortError) throw new Error('Timeout');
         throw err;
