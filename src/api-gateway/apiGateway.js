@@ -1,10 +1,9 @@
-// import axios from 'axios';
 import fetch from '../helpers/fetch.js';
 import { HOST, API_GATEWAY_URL } from '../config/index.config.js';
 
 export default async function () {
     try {
-        const response = await fetch(API_GATEWAY_URL + '/register', {
+        const { status, data } = await fetch(API_GATEWAY_URL + '/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: {
@@ -13,8 +12,8 @@ export default async function () {
             },
             timeout: 10000,
         });
-        return { message: response.message };
+        return { status, message: data.message };
     } catch(err) {
-        return { message: 'API Gateway is not responding', error: err };
+        return { status: 500, message: 'API Gateway not responding', error: err.message };
     }
 }

@@ -50,6 +50,12 @@ export function validateNumInstallments(numInstallments) {
     return /^\d{1,2}$/.test(numInstallments) && numInstallmentsNumber >= 1 && numInstallmentsNumber <= 36;
 }
 
-export function getBankApiEndpoint(cardNumber) {
-    return String(cardNumber)[1] <= 4 ? EAST_BANK_API_ENDPOINT : WESTERN_BANK_API_ENDPOINT;
+export function getBankInfo(cardNumber) {
+    return String(cardNumber)[1] <= 4 ? {
+        url: WESTERN_BANK_API_ENDPOINT,
+        bank: 'Western Bank',
+    } : {
+        url: EAST_BANK_API_ENDPOINT,
+        bank: 'East Bank',
+    };
 }

@@ -5,6 +5,7 @@ import poolU from './services/dbUniv.js';
 import poolP from './services/dbPaidify.js';
 import pkg from '../package.json' assert { type: "json" };
 import serveQueue from './gateway/serveQueue.js';
+import apiGateway from './api-gateway/apiGateway.js';
 
 const app = express();
 
@@ -45,8 +46,14 @@ app.get('/ping', async (_, res) => {
     res.status(200).json(results);
 });
 app.use('/pay', payment);
-app.post('/api-gateway', async (_, res) => res.status(200).json(await apiGateway()));
-app.post('/serve-queue', async (_, res) => res.status(200).json(await serveQueue()));
+app.post('/api-gateway', async (_, res) => {
+    const { status, message, error } = await apiGateway();
+    res.status(status).json({ message, error });
+});
+app.post('/serve-queue', async (_, res) => {
+    const { status, message, error } = await serveQueue();
+    res.status(status).json({ message, error });
+});
 app.use((_, res) => res.status(404).json({ message: 'Not Found' }));
 
 export default app;
