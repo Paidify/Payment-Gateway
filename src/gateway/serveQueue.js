@@ -95,22 +95,6 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
     card_type_id, card_number, exp_month, exp_year, cvv, num_installments, ref_number}) {
     
     const { bank, url } = getBankInfo(card_number);
-    console.log(url);
-    // console.log({
-    //         'nombre': first_name + ' ' + last_name,
-    //         'email': email,
-    //         'id': doc_number,
-    //         'monto': amount,
-    //         'mdPago': card_type_id,
-    //         'nroTarjeta': card_number,
-    //         'franquicia': getCardCategory(card_number),
-    //         'expMonth': exp_month,
-    //         'expYear': exp_year,
-    //         'cv': cvv,
-    //         'nroCuotas': num_installments,
-    //         'nroReferencia': ref_number
-    //     });
-    
     fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -249,7 +233,9 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                     }
                 }
 
-                mailClient.subject = `Payment Exitoso (${ref_number})`;
+                mailClient.subject = (payment && payment.payment_concept) ?
+                    `Pago de ${payment.payment_concept.payment_concept} realizado` : 'Pago con número de referencia ${ref_number} realizado';
+                
                 mailClient.html = `
                     <h2>Pago con Número de Referencia ${ref_number} Exitoso</h2>
                     <h4>Pago aprobado por ${bank}</h4>
@@ -273,7 +259,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
                     <p><b>Monto total:</b> ${amount}</p>
                 `;
             } else {
-                mailClient.subject = `Pago Fallido (${ref_number})`;
+                mailClient.subject = `Pago fallido (${ref_number})`;
                 mailClient.html = `
                     <h2>Pago con Número de Referencia ${ref_number} Fallido</h2>
                     <h4>Pago rechazado por ${bank}</h4>

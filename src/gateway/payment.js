@@ -17,6 +17,7 @@ import {
 import { servePaymentReq } from './serveQueue.js';
 import { transporter } from '../services/mailer.js';
 import { MAIL_USER } from '../config/index.config.js';
+import { CARD_TYPE_DEBIT } from '../config/constants.js';
 
 const router = new Router();
 
@@ -105,6 +106,9 @@ router.post('/', async (req, res) => {
                 }
                 return res.status(500).json({ message: 'Internal server error' });
             }
+            if(cardFields.card_type_id === CARD_TYPE_DEBIT && num_installments > 1) {
+                return res.status(400).json({ message: 'Debit cards do not support installments' });
+            }
     
             let guest, cityId, addressId, docTypeId;
             
@@ -189,6 +193,10 @@ router.post('/', async (req, res) => {
                 }
                 return res.status(500).json({ message: 'Internal server error' });
             }
+            if(cardFields.card_type_id === CARD_TYPE_DEBIT && num_installments > 1) {
+                return res.status(400).json({ message: 'Debit cards do not support installments' });
+            }
+            
             try {
                 payerFields = await readOne(
                     'user',
@@ -246,7 +254,7 @@ router.post('/', async (req, res) => {
     connP.release();
 
     res.status(201).json({ message: 'Payment created', ref_number: refNumber });
-    await servePaymentReq({
+    servePaymentReq({
         first_name: payerFields.first_name,
         last_name: payerFields.last_name,
         email: payerFields.email,
@@ -259,7 +267,9 @@ router.post('/', async (req, res) => {
         cvv: _.cvv,
         num_installments,
         ref_number: refNumber
-    });
+    }).then(() => {
+        console.log('Payment request served');
+    }).catch(() => {});
 
     const { bank } = getBankInfo(cardFields.card_number);
     const mailClient = {
@@ -269,6 +279,7 @@ router.post('/', async (req, res) => {
         html: `
             <h2>Solicitud de Pago Recibida</h2>
             <p>Tu pago fue recibido por Paidify y está siendo procesado por ${bank}.</p>
+            <p>Recibirás un correo de confirmación del pago en un plazo máximo de cinco (5) días hábiles.</p>
             <p><b>Número de referencia:</b> ${refNumber}</p>
         `
     };
