@@ -269,7 +269,9 @@ router.post('/', async (req, res) => {
         ref_number: refNumber
     }).then(() => {
         console.log('Payment request served');
-    }).catch(() => {});
+    }).catch(() => {
+        // console.log('Payment request couldn\'t be served');
+    });
 
     const { bank } = getBankInfo(cardFields.card_number);
     const mailClient = {
