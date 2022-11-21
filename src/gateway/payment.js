@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
         
         if(!first_name || !last_name || !email || !doc_number || !doc_type || !owner 
             || !validateCardNumber(card_number) || !card_type) {
-            
+            console.log('Missing required fields');
             return res.status(400).json({ message: 'Bad request' });
         }
     }
@@ -75,6 +75,7 @@ router.post('/', async (req, res) => {
                 return res.status(400).json({ message: 'Payment concept already completed' });
             }
         } catch(err) {
+            console.log(err);
             if(err.message === 'Not found') {
                 return res.status(400).json({ message: 'Invalid payment concept person' });
             }
@@ -86,6 +87,7 @@ router.post('/', async (req, res) => {
     try {
         await readOne('campus', { 'campus': ['id'] }, [], { id: campus_id }, poolU);
     } catch(err) {
+        console.log(err);
         if(err.message === 'Not found') {
             return res.status(400).json({ message: 'Invalid campus' });
         }
@@ -99,6 +101,7 @@ router.post('/', async (req, res) => {
             'payment_concept', { 'payment_concept': ['amount'] }, [], { id: payment_concept_id }, poolU
         )).amount;
     } catch(err) {
+        console.log(err);
         if(err.message === 'Not found') {
             return res.status(400).json({ message: 'Invalid payment concept' });
         }
@@ -127,6 +130,7 @@ router.post('/', async (req, res) => {
                 )).id;
                 cardFields = { card_number, card_type_id: cardTypeId, owner };
             } catch(err) {
+                console.log(err);
                 if(err.message === 'Not found') {
                     return res.status(400).json({ message: 'Invalid card type' });
                 }
@@ -142,6 +146,7 @@ router.post('/', async (req, res) => {
             try {
                 docTypeId = (await readOne('doc_type', { 'doc_type': [ 'id' ] }, [], { doc_type }, poolU)).id;
             } catch(err) {
+                console.log(err);
                 if(err.message === 'Not found') {
                     return res.status(400).json({ message: 'Invalid document type' });
                 }
@@ -214,6 +219,7 @@ router.post('/', async (req, res) => {
                     owner: payMeth.owner
                 }
             } catch(err) {
+                console.log(err);
                 if(err.message === 'Not found') {
                     return res.status(400).json({ message: 'Invalid payment method' });
                 }
@@ -226,12 +232,23 @@ router.post('/', async (req, res) => {
             try {
                 payerFields = await readOne(
                     'user',
-                    { 'user': ['payer_id', 'email', 'doc_number'] },
+                    { 'user': ['payer_id', 'person_id'] },
                     [],
                     { id: userId },
                     poolP
                 );
+                const { email, doc_number } = await readOne(
+                    'person',
+                    { 'person': ['email', 'doc_number'] },
+                    [],
+                    { id: payerFields.person_id },
+                    poolU
+                );
+                payerFields.email = email;
+                payerFields.doc_number = doc_number;
+                // delete payerFields.person_id;
             } catch(err) {
+                console.log(err);
                 if(err.message === 'Not found') {
                     return res.status(400).json({ message: 'Invalid user' });
                 }
