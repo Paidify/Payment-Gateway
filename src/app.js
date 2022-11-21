@@ -3,7 +3,7 @@ import morgan from 'morgan';
 import payment from './gateway/payment.js';
 import poolU from './services/dbUniv.js';
 import poolP from './services/dbPaidify.js';
-import pkg from '../package.json' assert { type: "json" };
+import pkg from '../package.json' assert { type: 'json' };
 import serveQueue from './gateway/serveQueue.js';
 import apiGateway from './api-gateway/apiGateway.js';
 
@@ -30,14 +30,14 @@ app.get('/ping', async (_, res) => {
         univDB: 'Univ DB says: ',
     }
     try {
-        results.paidifyDB += (await poolP.query('SELECT "Pong!" AS result'))[0][0].result;
+        results.paidifyDB += (await poolP.query('SELECT 'Pong!' AS result'))[0][0].result;
     } catch (err) {
         console.log(err);
         results.paidifyDB += 'Cannot connect to DB';
     }
 
     try {
-        results.univDB += (await poolU.query('SELECT "Pong!" AS result'))[0][0].result;
+        results.univDB += (await poolU.query('SELECT 'Pong!' AS result'))[0][0].result;
     } catch (err) {
         console.log(err);
         results.univDB += 'Cannot connect to DB';
