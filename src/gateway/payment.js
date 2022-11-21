@@ -186,7 +186,7 @@ router.post('/', async (req, res) => {
                     guestFields.payer_id = payerId;
                     await createOne('guest', guestFields, connP);
                 }
-                payerFields = { first_name, last_name, email, doc_number, payer_id: payerId };
+                payerFields = { email, doc_number, payer_id: payerId };
             } catch (err) {
                 console.log(err);
                 await connP.rollback();
@@ -226,7 +226,7 @@ router.post('/', async (req, res) => {
             try {
                 payerFields = await readOne(
                     'user',
-                    { 'user': ['payer_id', 'first_name', 'last_name', 'email', 'doc_number'] },
+                    { 'user': ['payer_id', 'email', 'doc_number'] },
                     [],
                     { id: userId },
                     poolP
@@ -282,8 +282,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Payment created', ref_number: refNumber });
     servePaymentReq({
-        first_name: payerFields.first_name,
-        last_name: payerFields.last_name,
+        owner: cardFields.owner,
         email: payerFields.email,
         doc_number: payerFields.doc_number,
         amount,

@@ -2,7 +2,7 @@ import poolP from '../services/dbPaidify.js';
 import poolU from '../services/dbUniv.js';
 import { createOne, deleteOne, readMany, readOne, updateOne } from '../helpers/crud.js'
 import fetch from "../helpers/fetch.js";
-import { date2Mysql, genInvoiceNumber, getBankInfo, getCardCategory } from "../helpers/utils.js";
+import { date2Mysql, genInvoiceNumber, getBankInfo, getCardCategory, parseOwnerName } from "../helpers/utils.js";
 import { transporter } from '../services/mailer.js';
 import { MAIL_USER } from '../config/index.config.js';
 
@@ -16,7 +16,7 @@ export default async function () {
                 'payment_req': ['card_number', 'owner', 'cvv', 'exp_year', 'exp_month'],
                 'payment': ['ref_number', 'date', 'num_installments', 'payment_concept_id', 'card_type_id'],
                 'user': ['person_id'],
-                'guest': ['first_name', 'last_name', 'email', 'doc_number'],
+                'guest': ['email', 'doc_number'],
             },
             [
                 'JOIN payment ON payment_req.payment_id = payment.id',
@@ -47,7 +47,7 @@ export default async function () {
     try {
         persons = await readMany(
             'person',
-            { 'person': ['id', 'first_name', 'last_name', 'email', 'doc_number'] },
+            { 'person': ['id', 'email', 'doc_number'] },
             null,
             { 'id': payReqs.map(payReq => payReq.person_id) },
             poolU
@@ -68,8 +68,6 @@ export default async function () {
         if(payReq.person_id) {
             const person = persons.find(person => person.id === payReq.person_id);
             if(!person) return { error: true };
-            payReq.first_name = person.first_name;
-            payReq.last_name = person.last_name;
             payReq.email = person.email;
             payReq.doc_number = person.doc_number;
         }
@@ -81,17 +79,10 @@ export default async function () {
 
     payReqs.forEach(servePaymentReq);
 
-    // let i = 0;
-    // const interval = setInterval(() => {
-    //     servePaymentReq(payReqs[i]);
-    //     i++;
-    //     if(i === payReqs.length) clearInterval(interval);
-    // }, 5000);
-
     return { status: 200, message: 'Processing payment requests' };
 }
 
-export async function servePaymentReq ({first_name, last_name, email, doc_number, amount, 
+export async function servePaymentReq ({owner, email, doc_number, amount, 
     card_type_id, card_number, exp_month, exp_year, cvv, num_installments, ref_number}) {
     
     // throw new Error('The service falls after saving the request and before sending it to the bank')
@@ -101,7 +92,7 @@ export async function servePaymentReq ({first_name, last_name, email, doc_number
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            'nombre': first_name + ' ' + last_name,
+            'nombre': parseOwnerName(owner),
             'email': email,
             'id': doc_number,
             'monto': amount,

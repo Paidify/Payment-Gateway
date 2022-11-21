@@ -63,3 +63,7 @@ export function getBankInfo(cardNumber) {
 export function getCardCategory(cardNumber) {
     return cardNumber[0];
 }
+
+export function parseOwnerName(owner) {
+    return owner.toLowerCase().split(' ').map((name) => name[0].toUpperCase() + name.slice(1)).join(' ');
+}
