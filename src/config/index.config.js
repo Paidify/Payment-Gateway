@@ -28,3 +28,6 @@ export const MAIL_HOST = process.env.MAIL_HOST || 'smtp.mailtrap.io';
 export const MAIL_PORT = process.env.MAIL_PORT || 2525;
 export const MAIL_USER = process.env.MAIL_USER || 'user';
 export const MAIL_PASSWORD = process.env.MAIL_PASSWORD || 'password';
+
+// jwt
+export const JWT_SECRET = process.env.JWT_SECRET || 'secret';

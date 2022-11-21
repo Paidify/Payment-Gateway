@@ -16,20 +16,70 @@ import {
 } from '../helpers/utils.js';
 import { servePaymentReq } from './serveQueue.js';
 import { transporter } from '../services/mailer.js';
-import { MAIL_USER } from '../config/index.config.js';
-import { CARD_TYPE_DEBIT } from '../config/constants.js';
+import { JWT_SECRET, MAIL_USER } from '../config/index.config.js';
+import { CARD_TYPE_DEBIT, ROLE_DEFAULT } from '../config/constants.js';
+import jwt from 'jsonwebtoken';
 
 const router = new Router();
 
 router.post('/', async (req, res) => {
-    const { user_id, date, num_installments, campus_id, payment_concept_id, 
+    
+    // check if payer is user or guest
+    let userId;
+    const auth = req.headers['authorization'];
+    if (auth) {
+        let token;
+        try {
+            token = jwt.verify(auth.split(' ')[1], JWT_SECRET);
+        } catch (err) {}
+        if (token.role !== ROLE_DEFAULT) {
+            return res.status(401).json({ message: 'You are not authorized to perform this action' });
+        }
+        userId = token.id;
+    }
+    
+    // check required fields in case of guest
+    if(!userId) {
+        const {
+            first_name, last_name, email, doc_number, doc_type, card_number, card_type, owner
+        } = req.body;
+        
+        if(!first_name || !last_name || !email || !doc_number || !doc_type || !owner 
+            || !validateCardNumber(card_number) || !card_type) {
+            
+            return res.status(400).json({ message: 'Bad request' });
+        }
+    }
+    
+    // check required fields
+    const { date, num_installments, campus_id, payment_concept_id, 
         payment_concept_person_id, cvv, exp_year, exp_month } = req.body;
     
-    // check fields
     if(!campus_id || !payment_concept_id || !validateNumInstallments(num_installments)
         || !validateCvv(cvv) || !validateExpYear(exp_year) || !validateExpMonth(exp_month) || !validateDate(date)) {
         console.log('Invalid fields');
         return res.status(400).json({ message: 'Bad request' });
+    }
+
+    // validate payment_concept_person_id if given
+    if(payment_concept_person_id) {
+        try {
+            const { completed } = await readOne(
+                'payment_concept_person',
+                { 'payment_concept_person': ['id', 'completed'] },
+                [],
+                { id: payment_concept_person_id },
+                poolU
+            );
+            if(completed) {
+                return res.status(400).json({ message: 'Payment concept already completed' });
+            }
+        } catch(err) {
+            if(err.message === 'Not found') {
+                return res.status(400).json({ message: 'Invalid payment concept person' });
+            }
+            return res.status(500).json({ message: 'Internal server error' });
+        }
     }
     
     // validate campus_id
@@ -54,24 +104,6 @@ router.post('/', async (req, res) => {
         }
         return res.status(500).json({ message: 'Internal server error' });
     }
-
-    // validate payment_concept_person_id if given
-    if(payment_concept_person_id) {
-        try {
-            await readOne(
-                'payment_concept_person',
-                { 'payment_concept_person': ['id'] },
-                [],
-                { id: payment_concept_person_id },
-                poolU
-            );
-        } catch(err) {
-            if(err.message === 'Not found') {
-                return res.status(400).json({ message: 'Invalid payment concept person' });
-            }
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-    }
     
     let refNumber, payerFields, cardFields;
     const _ = {
@@ -84,15 +116,9 @@ router.post('/', async (req, res) => {
     try {
         await connP.beginTransaction();
 
-        if(!user_id) {
+        if(!userId) {
             const { first_name, last_name, email, doc_number, doc_type, city, department, 
                 zip_code, address_line, card_number, card_type, owner } = req.body;
-            
-            if(!first_name || !last_name || !email || !doc_number || !doc_type || !owner 
-                || !validateCardNumber(card_number) || !card_type) {
-                // console.log('Bad request');
-                return res.status(400).json({ message: 'Bad request' });
-            }
             
             // get card_type_id
             try {
@@ -202,7 +228,7 @@ router.post('/', async (req, res) => {
                     'user',
                     { 'user': ['payer_id', 'first_name', 'last_name', 'email', 'doc_number'] },
                     [],
-                    { id: user_id },
+                    { id: userId },
                     poolP
                 );
             } catch(err) {
@@ -212,6 +238,7 @@ router.post('/', async (req, res) => {
                 return res.status(500).json({ message: 'Internal server error' });
             }
         }
+
         // create payment
         refNumber = genReferenceNumber();
         try {
