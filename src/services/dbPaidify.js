@@ -12,7 +12,7 @@ import {
 const pool = createPool({
     port: DB_PORT,
     host: DB_HOST,
-    ssl: NODE_ENV === 'production' ? { ca: DB_SSL_CA } : undefined,
+    ssl: NODE_ENV === 'production' && DB_SSL_CA ? { ca: DB_SSL_CA } : undefined,
     user: DB_USER,
     password: DB_PASSWORD,
     database: DB_PAIDIFY_SCHEMA,

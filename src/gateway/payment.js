@@ -32,6 +32,7 @@ router.post('/', async (req, res) => {
         try {
             token = jwt.verify(auth.split(' ')[1], JWT_SECRET);
         } catch (err) {}
+        if(!token) return res.status(401).json({ message: 'Invalid token' });
         if (token.role !== ROLE_DEFAULT) {
             return res.status(401).json({ message: 'You are not authorized to perform this action' });
         }
