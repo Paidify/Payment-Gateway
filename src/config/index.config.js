@@ -31,3 +31,8 @@ export const MAIL_PASSWORD = process.env.MAIL_PASSWORD || 'password';
 
 // jwt
 export const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+// other
+if (process.env.TERMINAL_TITLE) {
+    process.title = process.env.TERMINAL_TITLE;
+}
